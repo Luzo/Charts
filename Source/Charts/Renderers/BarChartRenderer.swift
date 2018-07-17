@@ -315,14 +315,15 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         }
 
         let buffer = _buffers[index]
-        
+
         // draw the bar shadow before the values
         if dataProvider.isDrawBarShadowEnabled
         {
             for j in stride(from: 0, to: buffer.rects.count, by: 1)
             {
                 let barRect = buffer.rects[j]
-                
+                let barWidthHalf = barRect.width / 2.0
+
                 if (!viewPortHandler.isInBoundsLeft(barRect.origin.x + barRect.size.width))
                 {
                     continue
@@ -334,7 +335,23 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 }
                 
                 context.setFillColor(dataSet.barShadowColor.cgColor)
-                context.fill(barRect)
+                if dataProvider.drawRoundedBars {
+                    #if !os(OSX)
+                    let bezierPath = UIBezierPath(
+                        roundedRect: barRect,
+                        byRoundingCorners: (dataSet.entryForIndex(j)?.y ?? 0) < 0.0 ? [.bottomLeft, .bottomRight]: [.topLeft, .topRight],
+                        cornerRadii: CGSize(width: barWidthHalf, height: barWidthHalf)
+                    )
+                    context.addPath(bezierPath.cgPath)
+                    #else
+                    //TODO: implement
+                    context.addRect(barRect)
+                    #endif
+
+                } else {
+                    context.addRect(barRect)
+                }
+                context.drawPath(using: .fill)
             }
         }
         
@@ -352,6 +369,7 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
         for j in stride(from: 0, to: buffer.rects.count, by: 1)
         {
             let barRect = buffer.rects[j]
+            let barWidthHalf = barRect.width / 2.0
 
             if (!viewPortHandler.isInBoundsLeft(barRect.origin.x + barRect.size.width))
             {
@@ -369,8 +387,24 @@ open class BarChartRenderer: BarLineScatterCandleBubbleRenderer
                 context.setFillColor(dataSet.color(atIndex: j).cgColor)
             }
             
-            context.fill(barRect)
-            
+            if dataProvider.drawRoundedBars {
+                #if !os(OSX)
+                let bezierPath = UIBezierPath(
+                    roundedRect: barRect,
+                    byRoundingCorners: (dataSet.entryForIndex(j)?.y ?? 0) < 0.0 ? [.bottomLeft, .bottomRight]: [.topLeft, .topRight],
+                    cornerRadii: CGSize(width: barWidthHalf, height: barWidthHalf)
+                )
+                context.addPath(bezierPath.cgPath)
+                #else
+                //TODO: implement
+                context.addRect(barRect)
+                #endif
+            } else {
+                context.addRect(barRect)
+            }
+
+            context.drawPath(using: .fill)
+
             if drawBorder
             {
                 context.setStrokeColor(borderColor.cgColor)
